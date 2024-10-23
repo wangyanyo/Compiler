@@ -262,4 +262,8 @@ struct node* node_peek_or_null();
 struct node* node_peek();
 struct node* node_pop();
 
+bool node_is_expressionable(struct node* node);
+struct node* node_peek_expressionable_or_null();
+void make_exp_node(struct node* left_node, struct node* right_node, const char* op);
+
 #endif

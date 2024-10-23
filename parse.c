@@ -9,6 +9,23 @@ struct history {
     int flags;
 };
 
+// 这两个history函数是在干嘛？
+struct history* history_begin(int flags) {
+    struct history* history = calloc(1, sizeof(struct history));
+    history->flags = flags;
+    return history;
+}
+
+struct history* history_down(struct history* history, int flags) {
+    struct history* new_history = calloc(1, sizeof(struct history));
+    memcpy(history, new_history, sizeof(struct history));
+    new_history->flags = flags;
+    return new_history;
+}
+
+static int parse_expressionable_single(struct history* history);
+static void parse_expressionable(struct history* history);
+
 static void parser_ignore_nl_or_comment(struct token* token) {
     while(token && token_is_nl_or_comment_or_newline_seperator(token)) {
         vector_peek(current_process->token_vec);
@@ -52,6 +69,11 @@ static struct token* token_peek_next() {
     return vector_peek_no_increment(current_process->token_vec);
 }
 
+// 把token序列看作一个中序遍历的一棵树
+static void parse_expressionable_for_op(struct history* history, const char* op) {
+    parse_expressionable(history);
+}
+
 static void prase_exp_normal(struct history* history) {
     struct token* op_token = token_peek_next();
     const char* op = op_token->sval;
@@ -66,6 +88,14 @@ static void prase_exp_normal(struct history* history) {
     node_left->flags |= NODE_FLAG_INSIDE_EXPRESSION;
     parse_expressionable_for_op(history_down(history, history->flags), op);
     struct node* node_right = node_pop();
+    node_right->flags |= NODE_FLAG_INSIDE_EXPRESSION;
+
+    // 可以预见这样可以构建一个表达式的语法树
+    make_exp_node(node_left, node_right, op);
+    struct node* exp_node = node_pop();
+
+    // 从这里可以看出来，node_vec 就是一个临时node数组，而 node_tree_vec 存的是所有语法树的根节点
+    node_push(exp_node);
 }
 
 static int parse_exp(struct history* history) {

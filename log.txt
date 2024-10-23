@@ -21,3 +21,7 @@
     11. 目前做的事就是忽略换行，注释和反斜。然后对于数字，变量还有字符串token制作node，制作好的node被放入node_vec，然后将最新
         的node，也就是node_vec的最后一个值存进node_tree_vec，目前还不清楚node_vec和node_tree_vec的区别，但我估计node_t
         ree_vec是用来存储根节点的？
+    12. 新增加了表达式node，将表达式序列看成一颗中序遍历的一棵树，将运算符看成是根节点，每次遇到运算符，就将左边的node当成左孩子，
+        计算右边序列的语法树，并作为自己的右孩子。还有函数来检查一个node是否是表达式node，说明还有很多其他类型的node。指导了node
+        _vec 和 node_tree_vec 的含义，node_vec 只是一个临时node数组，而 node_tree_vec 才是我们真正想要的，是语法树根节点的
+        集合。
