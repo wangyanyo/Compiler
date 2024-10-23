@@ -1,5 +1,6 @@
 OBJECTS= ./build/compiler.o ./build/cprocess.o ./build/lexer.o ./build/parse.o ./build/node.o ./build/token.o ./build/lex_process.o ./build/helpers/buffer.o ./build/helpers/vector.o
 INCLUDES= -I./
+PROXY_IP= 10.67.215.42
 
 all: ${OBJECTS}
 	gcc main.c ${INCLUDES} ${OBJECTS} -g -o ./main
@@ -34,3 +35,10 @@ all: ${OBJECTS}
 clean:
 	rm ./main
 	rm -rf ${OBJECTS}
+
+push:
+	git config --global http.https://github.com.proxy http://${PROXY_IP}:7890
+	git config --global https.https://github.com.proxy https://${PROXY_IP}:7890
+	git config --global http.proxy 'socks5://${PROXY_IP}:7890'
+	git config --global https.proxy 'socks5://${PROXY_IP}:7890'
+	git push -u origin main
