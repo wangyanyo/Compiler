@@ -1,4 +1,4 @@
-OBJECTS= ./build/compiler.o ./build/cprocess.o ./build/lexer.o ./build/parse.o ./build/node.o ./build/token.o ./build/lex_process.o ./build/helpers/buffer.o ./build/helpers/vector.o
+OBJECTS= ./build/compiler.o ./build/cprocess.o ./build/lexer.o ./build/parse.o ./expressionable.o ./build/node.o ./build/token.o ./build/lex_process.o ./build/helpers/buffer.o ./build/helpers/vector.o
 INCLUDES= -I./
 PROXY_IP= 10.67.215.42
 
@@ -16,6 +16,9 @@ all: ${OBJECTS}
 
 ./build/parse.o: ./parse.c
 	gcc ./parse.c ${INCLUDES} -o ./build/parse.o -g -c	
+
+./build/expressionable.o: ./expressionable.c
+	gcc ./expressionable.c ${INCLUDES} -o ./build/expressionable.o -g -c
 
 ./build/node.o: ./node.c
 	gcc ./node.c ${INCLUDES} -o ./build/node.o -g -c	
