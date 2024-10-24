@@ -73,4 +73,7 @@ void node_print(FILE* fp, struct node* node) {
     else if(node->type == NODE_TYPE_STRING) {
         fprintf(fp, "%s ", node->sval);
     }
+    else if(node->type == NODE_TYPE_IDENTIFIER) {
+        fprintf(fp, "%s ", node->sval);
+    }
 }

@@ -190,6 +190,11 @@ static int parse_exp(struct history* history) {
     return 0;
 }
 
+static void parse_identifier(struct history* history) {
+    assert(token_peek_next()->type == TOKEN_TYPE_IDENTIFIER);
+    parse_single_token_to_node();
+}
+
 static int parse_expressionable_single(struct history* history) {
     struct token* token = token_peek_next();
     if(!token) {
@@ -207,6 +212,10 @@ static int parse_expressionable_single(struct history* history) {
         case TOKEN_TYPE_OPERATOR:
             parse_exp(history);
             res = 0;
+        break;
+
+        case TOKEN_TYPE_IDENTIFIER:
+            parse_identifier(history);
         break;
     }
     return res;
@@ -258,7 +267,7 @@ int parse(struct compile_process* process) {
     vector_set_peek_pointer(process->token_vec, 0);
     while(parse_next() == 0) {
         node = node_peek();
-        vector_push(process->node_tree_vec, &node); 
+        vector_push(process->node_tree_vec, &node);
     }
 
     FILE* fp = fopen("./file/node.txt", "w");
