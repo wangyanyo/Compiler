@@ -62,3 +62,15 @@ void make_exp_node(struct node* left_node, struct node* right_node, const char* 
     assert(right_node);
     node_create(&(struct node){.type = NODE_TYPE_EXPRESSION, .exp.left = left_node, .exp.right = right_node, .exp.op = op});
 }
+
+void node_print(FILE* fp, struct node* node) {
+    if(node->type == NODE_TYPE_EXPRESSION) {
+        fprintf(fp, "%s ", node->exp.op);
+    }
+    else if(node->type == NODE_TYPE_NUMBER) {
+        fprintf(fp, "%lld ", node->llnum);
+    }
+    else if(node->type == NODE_TYPE_STRING) {
+        fprintf(fp, "%s ", node->sval);
+    }
+}

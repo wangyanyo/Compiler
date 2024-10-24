@@ -592,20 +592,7 @@ int lex(struct lex_process* process) {
     FILE* token_output_file = fopen("./file/token.txt", "w");
     for(int i = 0; i < lex_process->token_vec->count; ++i) {
         struct token* token = vector_at(lex_process->token_vec, i);
-        if(token->type == TOKEN_TYPE_COMMENT || 
-            token->type == TOKEN_TYPE_IDENTIFIER ||
-            token->type == TOKEN_TYPE_KEYWORD ||
-            token->type == TOKEN_TYPE_OPERATOR ||
-            token->type == TOKEN_TYPE_STRING) {
-
-            fprintf(token_output_file, "%s\n", token->sval);
-        }
-        else if(token->type == TOKEN_TYPE_NEWLINE) {
-            fprintf(token_output_file, "newline\n");
-        }
-        else {
-            fprintf(token_output_file, "%lld %c %d\n",token->llnum, token->cval, token->str_len);
-        }
+        token_print(token_output_file, token);
     }
     fclose(token_output_file);
 

@@ -88,7 +88,7 @@ static int parser_get_precedence_for_operator(const char* op, struct expressiona
             }
         }
     }
-    
+
     return -1;
 }
 
@@ -132,12 +132,7 @@ static void parser_node_shift_children_left(struct node* node) {
     node->exp.op = right_op;
 }
 
-// 语法树的下层肯定是比上层先算出来，所以 E(50 * E(30 + 20)) 和 E(E(50 * 30) + 20) 虽然序列相同，但却是不同的表达式
-// 所以这里涉及一个优先级问题，要根据优先级对语法树进行调整，看上去是优先级高的运算符在下沉，既然是下沉那就没有前效性
 static void parser_reorder_expression(struct node** node_out) {
-    // 这是一个dfs，并且只对多层表达式节点感兴趣，一个表达式节点是一定有左右孩子的
-    // 但是为什么左右孩子都是表达式的情况就置之不顾了呢？
-    // 而且还有一种情况就是 E(E(50 + 20) * 30), 原序列是 50 + 20 * 30
     struct node* node = *node_out;
     if(node->type != NODE_TYPE_EXPRESSION) {
         return;
@@ -150,7 +145,7 @@ static void parser_reorder_expression(struct node** node_out) {
 
     if(node->exp.left->type != NODE_TYPE_EXPRESSION &&
         node->exp.right && node->exp.right->type == NODE_TYPE_EXPRESSION) {
-        const char* right_op = node->exp.op;
+        const char* right_op = node->exp.right->exp.op;
         if(parser_left_op_has_priority(node->exp.op, right_op)) {
             parser_node_shift_children_left(node);
 
@@ -179,6 +174,10 @@ static void prase_exp_normal(struct history* history) {
     // 可以预见这样可以构建一个表达式的语法树
     make_exp_node(node_left, node_right, op);
     struct node* exp_node = node_pop();
+
+    // node_print(stdout, exp_node);
+    // node_print(stdout, exp_node->exp.left);
+    // node_print(stdout, exp_node->exp.right);
 
     parser_reorder_expression(&exp_node);
 
@@ -221,6 +220,7 @@ static void parse_expressionable(struct history* history) {
 
 int parse_next() {
     struct token* token = token_peek_next();
+
     if(!token) {
         return -1;
     }
@@ -230,6 +230,7 @@ int parse_next() {
         case TOKEN_TYPE_NUMBER:
         case TOKEN_TYPE_IDENTIFIER:
         case TOKEN_TYPE_STRING:
+        case TOKEN_TYPE_OPERATOR:
             parse_expressionable(history_begin(0));
 
         break;
@@ -237,6 +238,17 @@ int parse_next() {
 
     return 0;
 }
+
+static void dfs_print_node(FILE* fp, struct node* node) {
+    if(node == NULL) return;
+    
+    node_print(fp, node);
+
+    if(node->type == NODE_TYPE_EXPRESSION) dfs_print_node(fp, node->exp.left);
+
+    if(node->type == NODE_TYPE_EXPRESSION) dfs_print_node(fp, node->exp.right);
+}
+
 int parse(struct compile_process* process) {
     current_process = process;
     
@@ -248,6 +260,15 @@ int parse(struct compile_process* process) {
         node = node_peek();
         vector_push(process->node_tree_vec, &node); 
     }
+
+    FILE* fp = fopen("./file/node.txt", "w");
+    fprintf(fp, "一共有 %d 颗语法树\n", process->node_tree_vec->count);
+    for(int i = 0; i < process->node_tree_vec->count; ++i) {
+        fprintf(fp, "第 %d 颗语法树的前序序列\n", i + 1);
+        dfs_print_node(fp, *(struct node**)vector_at(process->node_tree_vec, i));    
+        fprintf(fp, "\n");
+    }
+    fclose(fp);
 
     return PARSE_ALL_OK;
 }
