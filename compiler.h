@@ -227,6 +227,19 @@ struct node {
     };
 };
 
+#define TOTAL_OPERATOR_GROUPS 14
+#define MAX_OPERATOR_IN_GROUP 12
+
+enum {
+    ASSOCIATIVITY_LEFT_TO_RIGHT,
+    ASSOCIATIVITY_RIGHT_TO_LEFT
+};
+
+struct expressionable_op_precedence_group {
+    char* operators[MAX_OPERATOR_IN_GROUP];
+    int associativity;
+};
+
 int compile_file(const char* filename, const char* out_filename, int flags);
 
 void compile_error(struct compile_process* compiler, const char* msg, ...);

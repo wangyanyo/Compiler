@@ -1,8 +1,11 @@
 #include "compiler.h"
 #include "helpers/vector.h"
+#include <assert.h>
 
 static struct compile_process* current_process;
 static struct token* parser_last_token;
+
+extern struct expressionable_op_precedence_group op_precedence[TOTAL_OPERATOR_GROUPS];
 
 // history 的含义未知
 struct history {
@@ -74,6 +77,89 @@ static void parse_expressionable_for_op(struct history* history, const char* op)
     parse_expressionable(history);
 }
 
+static int parser_get_precedence_for_operator(const char* op, struct expressionable_op_precedence_group** group_out) {
+    *group_out = NULL;
+    for(int i = 0; i < TOTAL_OPERATOR_GROUPS; ++i) {
+        for(int b = 0; op_precedence[i].operators[b]; ++b) {
+            const char* _op = op_precedence[i].operators[b];
+            if(S_EQ(op, _op)) {
+                *group_out = &op_precedence[i];
+                return i;
+            }
+        }
+    }
+    
+    return -1;
+}
+
+static bool parser_left_op_has_priority(const char* op_left, const char* op_right) {
+    struct expressionable_op_precedence_group* group_left;
+    struct expressionable_op_precedence_group* group_right;
+
+    if(S_EQ(op_left, op_right)) {
+        return false;
+    }
+
+    int precdence_left = parser_get_precedence_for_operator(op_left, &group_left);
+    int precdence_right = parser_get_precedence_for_operator(op_right, &group_right);
+    if(group_left->associativity == ASSOCIATIVITY_RIGHT_TO_LEFT) {
+        return false;
+    }
+
+    return precdence_left <= precdence_right;
+}
+
+static void parser_node_shift_children_left(struct node* node) {
+    assert(node->type == NODE_TYPE_EXPRESSION);
+    assert(node->type == NODE_TYPE_EXPRESSION);
+
+    // E(50 * E(30 + 20)) * 的优先级大于 +
+    const char* right_op = node->exp.right->exp.op;
+    struct node* new_exp_left_node = node->exp.left;
+    struct node* new_exp_right_node = node->exp.right->exp.left;
+    make_exp_node(new_exp_left_node, new_exp_right_node, node->exp.op);
+
+    // 先创建一个 E(50 * 30)
+    struct node* node_left_operand = node_pop();
+    
+    // 再创建一个 20
+    struct node* node_right_operand = node->exp.right->exp.right;
+
+    // 最后创建出 E(E(50 * 30) + 20)，其实就是做了一次左旋
+    // 目前没有考虑带括号的情况，操作的只是指针和op，node的数量没有减少，反而增加了一个
+    node->exp.left = node_left_operand;
+    node->exp.right = node_right_operand;
+    node->exp.op = right_op;
+}
+
+// 语法树的下层肯定是比上层先算出来，所以 E(50 * E(30 + 20)) 和 E(E(50 * 30) + 20) 虽然序列相同，但却是不同的表达式
+// 所以这里涉及一个优先级问题，要根据优先级对语法树进行调整，看上去是优先级高的运算符在下沉，既然是下沉那就没有前效性
+static void parser_reorder_expression(struct node** node_out) {
+    // 这是一个dfs，并且只对多层表达式节点感兴趣，一个表达式节点是一定有左右孩子的
+    // 但是为什么左右孩子都是表达式的情况就置之不顾了呢？
+    // 而且还有一种情况就是 E(E(50 + 20) * 30), 原序列是 50 + 20 * 30
+    struct node* node = *node_out;
+    if(node->type != NODE_TYPE_EXPRESSION) {
+        return;
+    }
+
+    if(node->exp.left->type != NODE_TYPE_EXPRESSION &&
+        node->exp.right && node->exp.right->type != NODE_TYPE_EXPRESSION) {
+            return;
+    }
+
+    if(node->exp.left->type != NODE_TYPE_EXPRESSION &&
+        node->exp.right && node->exp.right->type == NODE_TYPE_EXPRESSION) {
+        const char* right_op = node->exp.op;
+        if(parser_left_op_has_priority(node->exp.op, right_op)) {
+            parser_node_shift_children_left(node);
+
+            parser_reorder_expression(&node->exp.left);
+            parser_reorder_expression(&node->exp.right);
+        }
+    }
+}
+
 static void prase_exp_normal(struct history* history) {
     struct token* op_token = token_peek_next();
     const char* op = op_token->sval;
@@ -93,6 +179,8 @@ static void prase_exp_normal(struct history* history) {
     // 可以预见这样可以构建一个表达式的语法树
     make_exp_node(node_left, node_right, op);
     struct node* exp_node = node_pop();
+
+    parser_reorder_expression(&exp_node);
 
     // 从这里可以看出来，node_vec 就是一个临时node数组，而 node_tree_vec 存的是所有语法树的根节点
     node_push(exp_node);
