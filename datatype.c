@@ -11,3 +11,7 @@ bool keyword_is_datatype(const char* val) {
             S_EQ(val, "struct") ||
             S_EQ(val, "union");
 }
+
+bool datatype_is_struct_or_union_for_name(const char* val) {
+    return S_EQ(val, "union") || S_EQ(val, "struct");
+}

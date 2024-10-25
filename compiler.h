@@ -268,6 +268,12 @@ enum
     DATA_TYPE_UNKNOWN
 };
 
+enum {
+    DATA_TYPE_EXPECT_PRIMITIVE,
+    DATA_TYPE_EXPECT_STRUCT,
+    DATA_TYPE_EXPECT_UNION
+};
+
 struct datatype {
     int flags;
     int type;
@@ -330,5 +336,8 @@ void token_print(FILE* fp, struct token* token);
 void node_print(FILE* fp, struct node* node);
 
 bool keyword_is_datatype(const char* val);
+bool datatype_is_struct_or_union_for_name(const char* val);
+bool token_is_primitive_keyword(struct token* token);
+bool token_is_operator(struct token* token, const char* op);
 
 #endif

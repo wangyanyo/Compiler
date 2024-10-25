@@ -235,8 +235,77 @@ static void parse_datatype_modifiers(struct datatype* dtype) {
     }
 }
 
+static void parser_get_datatype_tokens(struct token** datatype_token,struct token** datatype_secondary_token) {
+    *datatype_token = token_next();
+    struct token* next_token = token_peek_next();
+    if(token_is_primitive_keyword(next_token)) {
+        datatype_secondary_token = next_token;
+        token_next();
+    }
+}
+
+static int parser_datatype_expected_for_type_string(const char* val) {
+    int type = DATA_TYPE_EXPECT_PRIMITIVE;
+    if(S_EQ(val, "unino")) {
+        type = DATA_TYPE_UNION;
+    }
+
+    if(S_EQ(val, "struct")) {
+        type = DATA_TYPE_STRUCT;
+    }
+
+    return type;
+}
+
+static int parser_get_random_type_name() {
+    static int x = 0;
+    x++;
+    return x;
+}
+
+static struct token* parser_build_random_type_name() {
+    char* tmp_name[25];
+    sprintf(tmp_name, "customtypename%i", parser_get_random_type_name());
+    char* sval = calloc(1, sizeof(tmp_name));
+    strncpy(sval, tmp_name, sizeof(tmp_name));
+    struct token* token = calloc(1, sizeof(struct token));
+    token->type = TOKEN_TYPE_IDENTIFIER;
+    token->sval = sval;
+    return token;
+}
+
+static bool token_next_is_operator(const char* op) {
+    struct token* token = token_peek_next();
+    return token_is_operator(token, op);
+}
+
+static int parser_get_pointer_depth() {
+    int depth = 0;
+    while(token_next_is_operator("*")) {
+        depth++;
+        token_next();
+    }
+    return depth;
+}
+
 static void parse_datatype_type(struct datatype* dtype) {
-    
+    struct token* datatype_token = NULL;
+    struct token* datatype_secondary_token = NULL;
+    parser_get_datatype_tokens(&datatype_token, &datatype_secondary_token);
+    int expected_type = parser_datatype_expected_for_type_string(datatype_token->sval);
+    if(datatype_is_struct_or_union_for_name(datatype_token->sval)) {
+        if(token_peek_next()->type == TOKEN_TYPE_IDENTIFIER) {
+            datatype_token = token_next();
+        }
+        else {
+            datatype_token = parser_build_random_type_name();
+            dtype->flags |= DATATYPE_FLAG_STRUCT_UNION_NO_NAME;
+        }
+    }
+    int pointer_depth = parser_get_pointer_depth();
+
+    // 我觉得要有一张表，里面存储(类型, 类型属性)；还要有一张表，存储(变量名, 类型属性*, datatype*)
+    // datatype 是属于变量的，而不是类型。类型属性里存储了里面每一个元素的名称和偏移量
 }
 
 static parse_datatype(struct datatype* dtype) {

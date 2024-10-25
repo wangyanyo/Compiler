@@ -1,5 +1,10 @@
 #include "compiler.h"
 
+#define PRIMITIVE_TYPES_TOTAL 7
+const char* primitive_types[PRIMITIVE_TYPES_TOTAL] = {
+    "void", "char", "short", "int", "long", "float", "double"
+};
+
 bool token_is_keyword(struct token* token, const char* value) {
     return token->type == TOKEN_TYPE_KEYWORD && S_EQ(token->sval, value);
 }
@@ -30,4 +35,21 @@ void token_print(FILE* fp, struct token* token) {
     else {
         fprintf(fp, "(%lld %c)\n",token->llnum, token->cval);
     }
+}
+
+bool token_is_primitive_keyword(struct token* token) {
+    if(token->type != TOKEN_TYPE_KEYWORD) {
+        return false;
+    }
+
+    for(int i = 0; i < PRIMITIVE_TYPES_TOTAL; ++i) {
+        if(S_EQ(token->sval, primitive_types[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool token_is_operator(struct token* token, const char* op) {
+    return token && token->type == TOKEN_TYPE_OPERATOR && S_EQ(token->sval, op);
 }
